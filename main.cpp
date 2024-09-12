@@ -29,6 +29,7 @@ unsigned int getbits(std::string_view word)
 
 
 
+
 int main()
 {
     std::ifstream in("words_alpha.txt");
@@ -75,17 +76,21 @@ int main()
     //for(auto x:freq) std::cout << x.c << " : " << x.f<< '\n';
     //std::cout << '\n';
 
+    //take out the letter bit representation for better locality
+    unsigned int letterbitrep[26];
+    for(int i=0; i<26; i++){
+            letterbitrep[i]=freq[i].n;
+    }
+
 
     //bin the words by their least frequent letter
-    std::array<std::vector<std::string_view>,26> allwords_by_mfl;
-    std::array<std::vector<unsigned int>,26> wordbits_by_mfl;
+    std::vector<unsigned int> wordbits_by_mfl[26];
 
     for(size_t k=0; k<allwords.size(); k++)
     {
         std::string_view word=allwords[k];
         int  i=0;
         while(!word.contains(freq[i].c)) i++;//i is in the index of the least frequent letter
-        allwords_by_mfl[i].emplace_back(word);
         wordbits_by_mfl[i].emplace_back(wordbits[k]);
     }
 
@@ -93,74 +98,70 @@ int main()
     //std::cout << '\n';
 
 
-    //arrays to store the solutions
-    std::array<std::string_view,5> sol= {};
+    //array to store the solutions
     std::array<unsigned int,5> solbits= {};
 
     std::ofstream out("solutions_without_anagrams.txt");
+    std::stringstream buf;
 
+    auto print_sols=[&](const std::array<unsigned int,5>& solbits){
+                                                    for (auto x : solbits)
+                                                        buf << allwords[bitstoindex[x]] << "\t";
+                                                    buf << "\n";
+    };
 
     int counter=0;
 
     bool skipped1=0;
     for(int bin1=0; bin1<26; bin1++)
     {
-        for(size_t i=0; i<allwords_by_mfl[bin1].size(); i++)
+        for(auto w : wordbits_by_mfl[bin1])
         {
-            solbits[0]=wordbits_by_mfl[bin1][i];
+            solbits[0]=w;
 
             for(int bin2=bin1+1; bin2<26; bin2++)
             {
-                if(solbits[0] & freq[bin2].n) continue;
+                if(solbits[0] & letterbitrep[bin2]) continue;
                 bool skipped2=skipped1;
-                for(size_t i2=0; i2<allwords_by_mfl[bin2].size(); i2++)
+                for(auto w : wordbits_by_mfl[bin2])
                 {
-                    solbits[1]=wordbits_by_mfl[bin2][i2];
+                    solbits[1]=w;
                     unsigned int cumbits2=solbits[0]|solbits[1];
                     if(std::popcount(cumbits2)!=10) continue;
 
                     for(int bin3=bin2+1; bin3<26; bin3++)
                     {
-                        if(cumbits2 & freq[bin3].n) continue;//bin3 is the index of the least frequent letter that is not in the first two words
+                        if(cumbits2 & letterbitrep[bin3]) continue;//bin3 is the index of the least frequent letter that is not in the first two words
                         bool skipped3=skipped2;
-                        for(size_t i3=0; i3<allwords_by_mfl[bin3].size(); i3++)
+                        for(auto w : wordbits_by_mfl[bin3])
                         {
-                            solbits[2]=wordbits_by_mfl[bin3][i3];
+                            solbits[2]=w;
                             unsigned int cumbits3=cumbits2 | solbits[2];
                             if(std::popcount(cumbits3)!=15) continue;
 
                             for(int bin4=bin3+1; bin4<26; bin4++)
                             {
-                                if(cumbits3 & freq[bin4].n) continue;//bin4 is the index of the least frequent letter that is not in the first three words
+                                if(cumbits3 & letterbitrep[bin4]) continue;//bin4 is the index of the least frequent letter that is not in the first three words
                                 bool skipped4=skipped3;
-                                for(size_t i4=0; i4<allwords_by_mfl[bin4].size(); i4++)
+                                for(auto w : wordbits_by_mfl[bin4])
                                 {
-                                    solbits[3]=wordbits_by_mfl[bin4][i4];
+                                    solbits[3]=w;
                                     unsigned int cumbits4=cumbits3|solbits[3];
                                     if(std::popcount(cumbits4)!=20) continue;
 
                                     for(int bin5=bin4+1; bin5<26; bin5++)
                                     {
-                                        if(cumbits4 & freq[bin5].n) continue;//bin5 is the index of the least frequent letter that is not in the first four words
+                                        if(cumbits4 & letterbitrep[bin5]) continue;//bin5 is the index of the least frequent letter that is not in the first four words
                                         bool skipped5=skipped4;
 
-                                        for(size_t i5=0; i5<allwords_by_mfl[bin5].size(); i5++)
+                                        for(auto w : wordbits_by_mfl[bin5])
                                         {
-                                            solbits[4]=wordbits_by_mfl[bin5][i5];
+                                            solbits[4]=w;
                                             unsigned int cumbits5=cumbits4|solbits[4];
                                             if(std::popcount(cumbits5)!=25) continue;
                                             counter++;
-                                            sol[0]=allwords_by_mfl[bin1][i];
-                                            sol[1]=allwords_by_mfl[bin2][i2];
-                                            sol[2]=allwords_by_mfl[bin3][i3];
-                                            sol[3]=allwords_by_mfl[bin4][i4];
-                                            sol[4]=allwords_by_mfl[bin5][i5];
-                                            //std::cout<< sol[0] << '\t'<< sol[1] << '\t' << sol[2] << '\t'<< sol[3] << '\t' << sol[4] << '\n';
-                                            std::stringstream buf;
-                                            for (auto word : sol)
-                                                buf << word << "\t";
-                                            buf << "\n";
-                                            out << buf.str();
+                                            //std::cout<< solbits[0] << '\t'<< solbits[1] << '\t' << solbits[2] << '\t'<< solbits[3] << '\t' << solbits[4] << '\n';
+                                            print_sols(solbits);
 
                                         }
                                         if(skipped5) break;
@@ -183,7 +184,7 @@ int main()
         skipped1=true;
     }
 
-
+    out << buf.str();
     std::cout << counter << " solutions written";
 
 
