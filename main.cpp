@@ -102,12 +102,11 @@ int main()
     std::array<unsigned int,5> solbits= {};
 
     std::ofstream out("solutions_without_anagrams.txt");
-    std::stringstream buf;
 
     auto print_sols=[&](const std::array<unsigned int,5>& solbits){
                                                     for (auto x : solbits)
-                                                        buf << allwords[bitstoindex[x]] << "\t";
-                                                    buf << "\n";
+                                                        out << allwords[bitstoindex[x]] << "\t";
+                                                    out << "\n";
     };
 
     int counter=0;
@@ -119,41 +118,46 @@ int main()
         {
             solbits[0]=w;
 
+
+            bool skipped2=skipped1;
             for(int bin2=bin1+1; bin2<26; bin2++)
             {
                 if(solbits[0] & letterbitrep[bin2]) continue;
-                bool skipped2=skipped1;
                 for(auto w : wordbits_by_mfl[bin2])
                 {
                     solbits[1]=w;
                     unsigned int cumbits2=solbits[0]|solbits[1];
                     if(std::popcount(cumbits2)!=10) continue;
 
+
+                    bool skipped3=skipped2;
                     for(int bin3=bin2+1; bin3<26; bin3++)
                     {
                         if(cumbits2 & letterbitrep[bin3]) continue;//bin3 is the index of the least frequent letter that is not in the first two words
-                        bool skipped3=skipped2;
                         for(auto w : wordbits_by_mfl[bin3])
                         {
                             solbits[2]=w;
                             unsigned int cumbits3=cumbits2 | solbits[2];
                             if(std::popcount(cumbits3)!=15) continue;
 
+
+
+                            bool skipped4=skipped3;
                             for(int bin4=bin3+1; bin4<26; bin4++)
                             {
                                 if(cumbits3 & letterbitrep[bin4]) continue;//bin4 is the index of the least frequent letter that is not in the first three words
-                                bool skipped4=skipped3;
                                 for(auto w : wordbits_by_mfl[bin4])
                                 {
                                     solbits[3]=w;
                                     unsigned int cumbits4=cumbits3|solbits[3];
                                     if(std::popcount(cumbits4)!=20) continue;
 
+
+
+                                    bool skipped5=skipped4;
                                     for(int bin5=bin4+1; bin5<26; bin5++)
                                     {
                                         if(cumbits4 & letterbitrep[bin5]) continue;//bin5 is the index of the least frequent letter that is not in the first four words
-                                        bool skipped5=skipped4;
-
                                         for(auto w : wordbits_by_mfl[bin5])
                                         {
                                             solbits[4]=w;
@@ -162,11 +166,12 @@ int main()
                                             counter++;
                                             //std::cout<< solbits[0] << '\t'<< solbits[1] << '\t' << solbits[2] << '\t'<< solbits[3] << '\t' << solbits[4] << '\n';
                                             print_sols(solbits);
-
                                         }
                                         if(skipped5) break;
                                         skipped5=true;
                                     }
+
+
                                 }
                                 if(skipped4) break;
                                 skipped4=true;
@@ -184,7 +189,6 @@ int main()
         skipped1=true;
     }
 
-    out << buf.str();
     std::cout << counter << " solutions written";
 
 
